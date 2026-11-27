@@ -1,0 +1,1763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIR4 Clan Expedition (CE) Gold Donation Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts with full unicode glyph support -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;600;700&family=Noto+Sans+SC:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans KR', 'Noto Sans SC', 'Segoe UI', sans-serif;
+            background-color: #f1f5f9;
+            color: #0f172a;
+        }
+        /* Spreadsheet style row highlights */
+        .row-yellow {
+            background-color: #fffde7 !important;
+        }
+        .row-yellow:hover {
+            background-color: #fff9c4 !important;
+        }
+        .row-yellow-accent {
+            border-left: 4px solid #fbc02d;
+        }
+        /* Specific color for checked IGNs */
+        .ign-checked {
+            color: #047857 !important; /* Emerald-700 */
+        }
+        /* Custom note tag colors */
+        .tag-cream {
+            background-color: #fffbeb;
+            border-left: 4px solid #f59e0b;
+        }
+        .tag-green {
+            background-color: #f0fdf4;
+            border-left: 4px solid #22c55e;
+        }
+        .tag-blue {
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+        }
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        /* Unicode font fallback helper */
+        .ign-input {
+            font-family: 'Inter', 'Segoe UI Symbol', 'Malgun Gothic', 'Microsoft YaHei', sans-serif;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Top Navigation & Action Header -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+            <!-- Brand & Event Date -->
+            <div class="flex items-center space-x-3">
+                <div class="bg-amber-500 text-slate-900 p-2 rounded-lg font-black text-xl flex items-center justify-center w-10 h-10 shadow">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-lg sm:text-xl tracking-tight leading-none text-white">
+                        MIR4 Clan Expedition (CE) <span class="text-amber-400">Gold Tracker</span>
+                    </h1>
+                    <div class="flex items-center space-x-2 mt-1">
+                        <span class="text-xs text-slate-400 uppercase font-bold tracking-wider">Event Date:</span>
+                        <input type="text" id="eventDateInput" class="bg-slate-800 text-amber-300 font-semibold text-xs px-2 py-0.5 rounded border border-slate-700 focus:outline-none focus:border-amber-400 w-32" value="11/21/2026" title="Edit week date">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Action Toolbar -->
+            <div class="flex flex-wrap items-center gap-2">
+                <!-- Prominent 1-Click Reset All Donations Button -->
+                <button onclick="confirmResetAllDonations()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold px-3.5 py-2 rounded-lg transition shadow flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate-left"></i> Reset All Donations to 0
+                </button>
+                <!-- 1-Click Reset All Remarks Button -->
+                <button onclick="confirmResetAllRemarks()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-3.5 py-2 rounded-lg transition shadow flex items-center gap-1.5">
+                    <i class="fa-solid fa-eraser"></i> Reset All Remarks
+                </button>
+                <button onclick="openBulkModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition shadow flex items-center gap-1.5">
+                    <i class="fa-solid fa-users-line"></i> Bulk Add IGNs
+                </button>
+                <button onclick="addRosterRow()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition shadow flex items-center gap-1.5">
+                    <i class="fa-solid fa-user-plus"></i> Add Row
+                </button>
+                <button onclick="copyDiscordSummary()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs px-3 py-2 rounded-lg transition shadow flex items-center gap-1.5">
+                    <i class="fa-solid fa-copy"></i> Discord Summary
+                </button>
+                
+                <div class="h-6 w-px bg-slate-700 mx-1 hidden sm:block"></div>
+
+                <div class="relative" id="moreMenuContainer">
+                    <button type="button" onclick="toggleMoreMenu(event)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium px-3 py-2 rounded-lg border border-slate-700 transition flex items-center gap-1">
+                        <i class="fa-solid fa-ellipsis-vertical"></i> More
+                    </button>
+                    <div id="moreDropdownMenu" class="absolute right-0 mt-1.5 w-48 bg-white text-slate-800 rounded-lg shadow-xl border border-slate-200 py-1 hidden z-50">
+                        <button type="button" onclick="closeMoreMenu(); confirmResetWeek()" class="w-full text-left px-4 py-2 text-xs hover:bg-slate-100 flex items-center gap-2 text-amber-700 font-medium">
+                            <i class="fa-solid fa-arrows-rotate"></i> Reset Amounts & Remarks
+                        </button>
+                        <button type="button" onclick="closeMoreMenu(); exportJSON()" class="w-full text-left px-4 py-2 text-xs hover:bg-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-file-export text-slate-500"></i> Export JSON Data
+                        </button>
+                        <label onclick="closeMoreMenu()" class="w-full text-left px-4 py-2 text-xs hover:bg-slate-100 flex items-center gap-2 cursor-pointer">
+                            <i class="fa-solid fa-file-import text-slate-500"></i> Import JSON Data
+                            <input type="file" id="importFileInput" accept=".json" class="hidden" onchange="importJSON(event)">
+                        </label>
+                        <hr class="my-1 border-slate-200">
+                        <button type="button" onclick="closeMoreMenu(); confirmLoadSampleData()" class="w-full text-left px-4 py-2 text-xs hover:bg-slate-100 flex items-center gap-2 text-blue-600">
+                            <i class="fa-solid fa-database"></i> Reload Sample Data
+                        </button>
+                        <button type="button" onclick="closeMoreMenu(); confirmClearAll()" class="w-full text-left px-4 py-2 text-xs hover:bg-slate-100 flex items-center gap-2 text-rose-600 font-medium">
+                            <i class="fa-solid fa-trash"></i> Clear Everything
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- KPI Banner -->
+    <section class="bg-white border-b border-slate-200 py-3 px-4 shadow-xs">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-3">
+            <!-- Dynasty Gold KPI -->
+            <div class="bg-blue-50/80 border border-blue-200 rounded-xl p-3 flex items-center justify-between shadow-xs">
+                <div>
+                    <span class="text-xs font-bold text-blue-700 uppercase tracking-wider block">Dynasty Gold Total</span>
+                    <div class="text-2xl font-black text-blue-900 mt-0.5" id="dynastyTotalGold">0g</div>
+                    <span class="text-xs text-blue-600 font-medium" id="dynastyCount">0 contributors</span>
+                </div>
+                <div class="bg-blue-600 text-white p-3 rounded-lg text-lg font-bold">
+                    <i class="fa-solid fa-coins"></i>
+                </div>
+            </div>
+
+            <!-- Redmane Gold KPI -->
+            <div class="bg-rose-50/80 border border-rose-200 rounded-xl p-3 flex items-center justify-between shadow-xs">
+                <div>
+                    <span class="text-xs font-bold text-rose-700 uppercase tracking-wider block">Redmane Gold Total</span>
+                    <div class="text-2xl font-black text-rose-900 mt-0.5" id="redmaneTotalGold">0g</div>
+                    <span class="text-xs text-rose-600 font-medium" id="redmaneCount">0 contributors</span>
+                </div>
+                <div class="bg-rose-600 text-white p-3 rounded-lg text-lg font-bold">
+                    <i class="fa-solid fa-gem"></i>
+                </div>
+            </div>
+
+            <!-- Combined Total KPI -->
+            <div class="bg-amber-50/80 border border-amber-300 rounded-xl p-3 flex items-center justify-between shadow-xs">
+                <div>
+                    <span class="text-xs font-bold text-amber-800 uppercase tracking-wider block">Combined Total Gold</span>
+                    <div class="text-2xl font-black text-amber-950 mt-0.5" id="combinedTotalGold">0g</div>
+                    <span class="text-xs text-amber-700 font-medium" id="totalMembersCount">0 total members</span>
+                </div>
+                <div class="bg-amber-500 text-slate-950 p-3 rounded-lg text-lg font-bold">
+                    <i class="fa-solid fa-sack-dollar"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Workspace Layout: FULL-WIDTH ROSTER TOP, NOTES & SCRATCHPAD BOTTOM -->
+    <main class="max-w-7xl mx-auto px-4 py-5 flex-grow w-full flex flex-col gap-6">
+        
+        <!-- TOP PANEL (FULL WIDTH): Weekly CE Gold Donation Roster -->
+        <section class="w-full flex flex-col gap-4">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+                
+                <!-- Table Header & Controls -->
+                <div class="bg-slate-100 border-b border-slate-200 p-3.5 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-table-list text-slate-700"></i>
+                        <h2 class="font-bold text-slate-800 text-sm tracking-wide">Weekly CE Gold Roster (Full-Width)</h2>
+                        <span id="filteredRowCount" class="bg-slate-200 text-slate-700 font-bold text-[11px] px-2 py-0.5 rounded-full">0 rows</span>
+                    </div>
+
+                    <!-- Table Tools: Search, Filter & Reset Order -->
+                    <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                        <div class="relative flex-grow sm:w-56">
+                            <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-xs text-slate-400"></i>
+                            <input type="text" id="tableSearchInput" oninput="renderTable()" placeholder="Search IGN / Remarks..." class="w-full text-xs pl-8 pr-3 py-1.5 rounded-md border border-slate-300 focus:outline-none focus:border-indigo-500 bg-white">
+                        </div>
+                        <select id="statusFilterSelect" onchange="renderTable()" class="text-xs py-1.5 px-2 rounded-md border border-slate-300 focus:outline-none focus:border-indigo-500 bg-white text-slate-700">
+                            <option value="all">All Rows</option>
+                            <option value="confirmed">Yellow / Green IGN (Paid)</option>
+                            <option value="pending">White (Pending)</option>
+                            <option value="has_dynasty">Dynasty Donated</option>
+                            <option value="has_redmane">Redmane Donated</option>
+                        </select>
+                        <button id="resetSortBtn" onclick="resetTableSort()" class="hidden text-xs py-1.5 px-2.5 rounded-md border border-indigo-300 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold transition flex items-center gap-1" title="Restore original row order">
+                            <i class="fa-solid fa-arrow-rotate-left text-[10px]"></i> Reset Order
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Remarks Presets Bar -->
+                <div class="px-4 py-2 bg-slate-50 border-b border-slate-200 flex items-center gap-2 overflow-x-auto text-xs">
+                    <span class="text-slate-500 font-bold text-[11px] whitespace-nowrap">Quick Remark Presets:</span>
+                    <div id="quickPresetsContainer" class="flex items-center gap-1.5">
+                        <!-- Dynamic Preset Chips -->
+                    </div>
+                    <button onclick="openPresetModal()" class="px-2 py-1 rounded bg-slate-200 hover:bg-slate-300 text-slate-800 text-[11px] font-bold whitespace-nowrap border border-slate-300 transition flex items-center gap-1" title="Add custom quick remark preset">
+                        <i class="fa-solid fa-plus text-[10px]"></i> Add Preset
+                    </button>
+                </div>
+
+                <!-- Table Scroll Container (Full Width & Uncropped IGN Column) -->
+                <div class="overflow-x-auto min-h-[460px]">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-800 text-slate-200 text-[11px] uppercase tracking-wider font-semibold sticky top-0 z-10 select-none">
+                                <th class="py-2.5 px-2 text-center w-10">#</th>
+                                <th class="py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition" onclick="sortTable('confirmed')" title="Sort by Paid / Checked Status">
+                                    Paid <i id="sortIcon-confirmed" class="fa-solid fa-sort ml-0.5 text-[10px] opacity-60"></i>
+                                </th>
+                                <th class="py-2.5 px-3 min-w-[200px] cursor-pointer hover:text-white transition" onclick="sortTable('ign')" title="Sort by Player IGN">
+                                    Player IGN <i id="sortIcon-ign" class="fa-solid fa-sort ml-1 text-[10px] opacity-60"></i>
+                                </th>
+                                <!-- Column 1: Dynasty Gold Amount -->
+                                <th class="py-2.5 px-2 min-w-[120px] w-32 cursor-pointer hover:text-white bg-slate-900/40 text-amber-300 transition" onclick="sortTable('dynastyGold')" title="Sort by Dynasty Gold">
+                                    Dynasty (g) <i id="sortIcon-dynastyGold" class="fa-solid fa-sort ml-1 text-[10px] opacity-60"></i>
+                                </th>
+                                <!-- Column 2: Dynasty Remarks / Notes -->
+                                <th class="py-2.5 px-3 min-w-[220px] cursor-pointer hover:text-white transition" onclick="sortTable('dynastyRemarks')" title="Sort by Dynasty Remarks / Notes">
+                                    Remarks (Dynasty / Who Donated) <i id="sortIcon-dynastyRemarks" class="fa-solid fa-sort ml-1 text-[10px] opacity-60"></i>
+                                </th>
+                                <!-- Column 3: Redmane Gold Amount -->
+                                <th class="py-2.5 px-2 min-w-[120px] w-32 cursor-pointer hover:text-white bg-slate-900/40 text-rose-300 transition" onclick="sortTable('redmaneGold')" title="Sort by Redmane Gold">
+                                    Redmane (g) <i id="sortIcon-redmaneGold" class="fa-solid fa-sort ml-1 text-[10px] opacity-60"></i>
+                                </th>
+                                <!-- Column 4: Redmane Remarks / Notes -->
+                                <th class="py-2.5 px-3 min-w-[200px] cursor-pointer hover:text-white transition" onclick="sortTable('redmaneRemarks')" title="Sort by Redmane Remarks / Notes">
+                                    Remarks (Redmane) <i id="sortIcon-redmaneRemarks" class="fa-solid fa-sort ml-1 text-[10px] opacity-60"></i>
+                                </th>
+                                <th class="py-2.5 px-2 text-center w-14">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rosterTableBody" class="divide-y divide-slate-200 bg-white">
+                            <!-- Dynamic Roster Rows -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Table Footer -->
+                <div class="bg-slate-100 border-t border-slate-200 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button onclick="addRosterRow()" class="text-slate-700 hover:text-indigo-600 font-bold flex items-center gap-1.5 transition">
+                            <i class="fa-solid fa-circle-plus text-indigo-600 text-sm"></i> Add New Member Row
+                        </button>
+                        <button onclick="confirmResetAllDonations()" class="text-rose-600 hover:text-rose-800 font-semibold flex items-center gap-1 transition ml-2">
+                            <i class="fa-solid fa-rotate-left"></i> Quick Reset Gold to 0
+                        </button>
+                        <button onclick="confirmResetAllRemarks()" class="text-amber-700 hover:text-amber-900 font-semibold flex items-center gap-1 transition ml-2">
+                            <i class="fa-solid fa-eraser"></i> Quick Reset Remarks
+                        </button>
+                    </div>
+                    <div class="flex items-center space-x-3 text-slate-500 text-[11px]">
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 bg-amber-100 border border-amber-400 inline-block rounded-xs"></span> <strong class="text-emerald-700">Green IGN</strong> = Paid</span>
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 bg-white border border-slate-300 inline-block rounded-xs"></span> White = Pending</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- BOTTOM PANEL: Clan Fund & GCash Notes Ledger + Scratchpad -->
+        <section class="w-full grid grid-cols-1 lg:grid-cols-12 gap-5 mt-2">
+            
+            <!-- Notes Ledger Table (7 columns wide) -->
+            <div class="lg:col-span-7 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+                <!-- Panel Header -->
+                <div class="bg-slate-100 border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-receipt text-amber-600"></i>
+                        <h2 class="font-bold text-slate-800 text-sm tracking-wide">Clan Fund & GCash Notes Ledger</h2>
+                    </div>
+                    <button onclick="openNoteModal()" class="text-xs bg-slate-800 hover:bg-slate-700 text-white font-semibold px-2.5 py-1.5 rounded transition shadow-xs flex items-center gap-1">
+                        <i class="fa-solid fa-plus"></i> Add Note
+                    </button>
+                </div>
+
+                <!-- Filter Tabs -->
+                <div class="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center gap-1.5 overflow-x-auto text-xs">
+                    <span class="text-slate-500 font-medium text-[11px] mr-1">Filter:</span>
+                    <button onclick="filterNotes('all')" id="noteFilter-all" class="px-2 py-0.5 rounded-full bg-slate-800 text-white font-medium text-[11px]">All</button>
+                    <button onclick="filterNotes('cream')" id="noteFilter-cream" class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 hover:bg-amber-200 font-medium text-[11px]">Cream (Pending)</button>
+                    <button onclick="filterNotes('green')" id="noteFilter-green" class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 hover:bg-emerald-200 font-medium text-[11px]">Green (Donated)</button>
+                    <button onclick="filterNotes('blue')" id="noteFilter-blue" class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 font-medium text-[11px]">Blue (Event Credit)</button>
+                </div>
+
+                <!-- Column-Separated Ledger Table -->
+                <div class="overflow-x-auto max-h-[400px]">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead class="sticky top-0 bg-slate-800 text-slate-200 text-[10px] uppercase tracking-wider font-semibold z-10">
+                            <tr>
+                                <th class="py-2 px-3">Member / Item Header</th>
+                                <th class="py-2 px-2 w-32 text-amber-300">Gold / GCash Amount</th>
+                                <th class="py-2 px-3">Remarks / Dates</th>
+                                <th class="py-2 px-2 text-center w-14">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="notesTableBody" class="divide-y divide-slate-200 bg-white">
+                            <!-- Dynamic note rows -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Footer Summary of Notes -->
+                <div class="bg-slate-50 px-4 py-2.5 border-t border-slate-200 text-xs text-slate-500 flex justify-between items-center">
+                    <span id="noteCount" class="font-medium text-slate-700">0 notes</span>
+                    <button onclick="confirmClearNotes()" class="text-rose-600 hover:underline font-medium text-[11px]">Clear Notes</button>
+                </div>
+            </div>
+
+            <!-- Freeform Scratchpad (5 columns wide) -->
+            <div class="lg:col-span-5 bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label for="scratchpad" class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-note-sticky text-amber-500"></i> Scratchpad & Reference Numbers
+                        </label>
+                        <span class="text-[10px] text-slate-400">Auto-saved</span>
+                    </div>
+                    <textarea id="scratchpad" rows="11" oninput="saveScratchpad()" placeholder="Type raw notes, GCash reference numbers, trade details or temporary lists here..." class="w-full text-xs p-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400 text-slate-700 bg-slate-50/50 resize-y font-mono"></textarea>
+                </div>
+                <div class="mt-2 text-[11px] text-slate-400 text-right">
+                    All edits are saved to your browser automatically.
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREENSHOTS & RECEIPTS GALLERY SECTION -->
+        <section id="screenshotsSection" class="w-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-1">
+            <!-- Section Header -->
+            <div class="bg-slate-100 border-b border-slate-200 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-images text-indigo-600"></i>
+                    <h2 class="font-bold text-slate-800 text-sm tracking-wide">GCash Receipts & Donation Screenshots</h2>
+                    <span id="screenshotCount" class="bg-indigo-100 text-indigo-800 font-bold text-[11px] px-2 py-0.5 rounded-full">0 images</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="pasteFromClipboardButton()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow-xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-paste"></i> Paste Image
+                    </button>
+                    <label class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow-xs flex items-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-upload"></i> Upload File
+                        <input type="file" id="screenshotFileInput" accept="image/*" multiple class="hidden" onchange="handleScreenshotFileSelect(event)">
+                    </label>
+                    <button onclick="confirmClearScreenshots()" class="text-xs text-rose-600 hover:bg-rose-50 font-semibold px-2.5 py-1.5 rounded-lg border border-transparent hover:border-rose-200 transition">
+                        Clear All
+                    </button>
+                </div>
+            </div>
+
+            <!-- Clipboard Paste & Drag-and-Drop Zone -->
+            <div class="p-4 bg-slate-50/70 border-b border-slate-200">
+                <div id="screenshotDropZone" tabindex="0" class="border-2 border-dashed border-slate-300 hover:border-indigo-400 focus:border-indigo-500 focus:outline-none rounded-xl p-4 text-center transition bg-white cursor-pointer flex flex-col items-center justify-center gap-1.5" onclick="document.getElementById('screenshotFileInput').click()">
+                    <div class="w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-base">
+                        <i class="fa-solid fa-clipboard-check"></i>
+                    </div>
+                    <p class="text-xs font-bold text-slate-700">
+                        Press <kbd class="px-1.5 py-0.5 text-[11px] font-semibold text-slate-800 bg-slate-100 border border-slate-300 rounded">Ctrl + V</kbd> anywhere on the page to paste a screenshot from clipboard
+                    </p>
+                    <p class="text-[11px] text-slate-400">Supports GCash receipts, in-game donation logs, PNG/JPG/WEBP (auto-compressed for local storage)</p>
+                </div>
+            </div>
+
+            <!-- Uploaded Screenshots Grid -->
+            <div id="screenshotsGrid" class="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <!-- Dynamic screenshot cards -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-4 px-4 text-center border-t border-slate-800">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+            <span>MIR4 Clan Expedition (CE) Gold Donation Tracker &bull; Column-Separated Edition</span>
+            <span id="saveStatus" class="text-amber-400 font-medium flex items-center gap-1">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Local Storage Auto-saved
+            </span>
+        </div>
+    </footer>
+
+    <!-- MODAL 1: Bulk Add / Paste IGNs Modal -->
+    <div id="bulkModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden flex flex-col">
+            <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between">
+                <h3 class="font-bold text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-users-line text-amber-400"></i> Bulk Add / Paste Member IGNs
+                </h3>
+                <button onclick="closeBulkModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Paste IGN List (One per line)</label>
+                    <textarea id="bulkInput" rows="6" placeholder="IronPricess&#10;nina2will&#10;CL1NKZ ツ&#10;ayame572&#10;Ⓢ Ⓞ Ⓢ&#10;Wednesdáy" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 ign-input font-mono"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Default Dynasty Gold</label>
+                        <input type="number" id="bulkDynastyGold" value="200" class="w-full text-xs p-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Default Redmane Gold</label>
+                        <input type="number" id="bulkRedmaneGold" value="0" class="w-full text-xs p-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Default Remarks (Dynasty / Who Donated)</label>
+                    <input type="text" id="bulkRemarks" value="gcash, donated by Tsurugiii K" class="w-full text-xs p-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g. gcash, donated by Tsurugiii K">
+                </div>
+
+                <div class="flex items-center space-x-2 pt-1">
+                    <input type="checkbox" id="bulkConfirmed" class="rounded text-amber-500 focus:ring-amber-400" checked>
+                    <label for="bulkConfirmed" class="text-xs font-medium text-slate-700">Mark all newly added rows as Confirmed/Paid (Yellow highlight & green IGN)</label>
+                </div>
+            </div>
+            <div class="bg-slate-100 px-5 py-3 flex justify-end space-x-2 border-t border-slate-200">
+                <button onclick="closeBulkModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg">Cancel</button>
+                <button onclick="processBulkAdd()" class="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow-xs">Add Members</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Add / Edit Note Modal with SEPARATE Amount & Details Fields -->
+    <div id="noteModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden flex flex-col">
+            <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between">
+                <h3 class="font-bold text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-amber-400"></i> <span id="noteModalTitle">Add Clan Fund Note</span>
+                </h3>
+                <button onclick="closeNoteModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="p-5 space-y-3">
+                <input type="hidden" id="noteEditId">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Member / Item Header</label>
+                    <input type="text" id="noteNameInput" placeholder="e.g. AthenaHeraaa, Dynasty Gold Fund..." class="w-full text-xs p-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 ign-input">
+                </div>
+
+                <!-- SEPARATED COLUMN 1: GOLD / GCASH AMOUNT -->
+                <div>
+                    <label class="block text-xs font-bold text-amber-700 mb-1">Gold / GCash Amount (Dedicated Column)</label>
+                    <input type="text" id="noteAmountInput" placeholder="e.g. 120 gcash, 200g, 938g..." class="w-full text-xs p-2 rounded border border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-500 font-semibold bg-amber-50/40">
+                </div>
+
+                <!-- SEPARATED COLUMN 2: REMARKS / DATES -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Remarks / Dates (Dedicated Column)</label>
+                    <textarea id="noteDetailsInput" rows="2" placeholder="e.g. (11/14) (11/21), dyna donated 11/13, backup clan gold" class="w-full text-xs p-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Color Tag Highlight</label>
+                    <select id="noteTagSelect" class="w-full text-xs p-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="cream">Cream (Default / Pending Info)</option>
+                        <option value="green">Green (Completed / Donated)</option>
+                        <option value="blue">Blue (Event / Special Credit)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="bg-slate-100 px-5 py-3 flex justify-end space-x-2 border-t border-slate-200">
+                <button onclick="closeNoteModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg">Cancel</button>
+                <button onclick="saveNote()" class="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow-xs">Save Note</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Discord Summary Preview & Copy -->
+    <div id="discordModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-xl w-full overflow-hidden flex flex-col">
+            <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between">
+                <h3 class="font-bold text-sm flex items-center gap-2 text-amber-400">
+                    <i class="fa-brands fa-discord"></i> Discord / Chat Formatted Summary
+                </h3>
+                <button onclick="closeDiscordModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="p-4 space-y-3">
+                <p class="text-xs text-slate-600">This clean summary is formatted for Discord or Clan announcements. Click copy to copy directly to your clipboard.</p>
+                <textarea id="discordTextarea" rows="12" readonly class="w-full text-xs p-3 rounded-lg border border-slate-300 bg-slate-900 text-amber-300 font-mono focus:outline-none select-all"></textarea>
+            </div>
+            <div class="bg-slate-100 px-5 py-3 flex justify-end space-x-2 border-t border-slate-200">
+                <button onclick="closeDiscordModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg">Close</button>
+                <button onclick="copyDiscordTextToClipboard()" class="px-4 py-2 text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg shadow-xs flex items-center gap-1.5">
+                    <i class="fa-solid fa-copy"></i> Copy To Clipboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: Add Quick Remark Preset Modal -->
+    <div id="presetModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden flex flex-col">
+            <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between">
+                <h3 class="font-bold text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-tag text-amber-400"></i> Add Quick Remark Preset
+                </h3>
+                <button onclick="closePresetModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="p-5 space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Short Button Label</label>
+                    <input type="text" id="presetLabelInput" placeholder="e.g. gcash (Tsurugiii K)" class="w-full text-xs p-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Full Remark Text Inserted</label>
+                    <input type="text" id="presetTextInput" placeholder="e.g. gcash, donated by Tsurugiii K" class="w-full text-xs p-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Chip Color Theme</label>
+                    <select id="presetColorSelect" class="w-full text-xs p-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="amber">Amber / Gold</option>
+                        <option value="blue">Blue</option>
+                        <option value="purple">Purple</option>
+                        <option value="emerald">Emerald / Green</option>
+                        <option value="rose">Rose / Red</option>
+                    </select>
+                </div>
+            </div>
+            <div class="bg-slate-100 px-5 py-3 flex justify-end space-x-2 border-t border-slate-200">
+                <button onclick="closePresetModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg">Cancel</button>
+                <button onclick="savePreset()" class="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow-xs">Save Preset</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 5: Full-Size Image Lightbox Preview -->
+    <div id="imagePreviewModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden" onclick="closeImagePreviewModal()">
+        <div class="bg-white rounded-xl shadow-2xl border border-slate-700 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col" onclick="event.stopPropagation()">
+            <div class="bg-slate-900 text-white px-4 py-3 flex items-center justify-between">
+                <span id="previewModalTitle" class="text-xs font-bold text-amber-300 truncate pr-4">Screenshot Preview</span>
+                <button onclick="closeImagePreviewModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="bg-slate-950 flex-grow overflow-auto flex items-center justify-center p-3">
+                <img id="previewModalImg" src="" alt="Full screenshot preview" class="max-w-full max-h-[70vh] object-contain rounded">
+            </div>
+            <div class="bg-slate-100 px-4 py-3 border-t border-slate-200 flex items-center gap-2">
+                <i class="fa-solid fa-pen text-slate-500 text-xs"></i>
+                <input type="text" id="previewModalNoteInput" placeholder="Add or edit note for this screenshot..." class="flex-grow text-xs px-3 py-1.5 rounded border border-slate-300 focus:outline-none focus:border-indigo-500 bg-white">
+                <button onclick="savePreviewModalNote()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded">Save Note</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- JAVASCRIPT APP LOGIC -->
+    <script>
+        /**
+         * Initial Sample Data (Spreadsheet mirrored with SEPARATED amount and details columns)
+         */
+        const initialSampleNotes = [
+            { id: 'note-1', name: 'AthenaHeraaa', amount: '120 gcash', details: '(11/14) (11/21)', tag: 'cream' },
+            { id: 'note-2', name: 'SANAAAA1229', amount: '200g', details: 'dyna donated 11/13', tag: 'green' },
+            { id: 'note-3', name: 'Dainsleif 明', amount: '200g', details: 'dyna donated 11/11', tag: 'green' },
+            { id: 'note-4', name: '傑森 ÇhïçkBöii', amount: '200 gcash', details: '(11/7) (11/14) (11/21) + 26g', tag: 'cream' },
+            { id: 'note-5', name: 'Lynelle 장미', amount: '200 gcash', details: '(10/17) (11/7) (11/14) (11/21)', tag: 'cream' },
+            { id: 'note-6', name: 'SOS', amount: '130g', details: '(Dyna) (redmane swap)', tag: 'cream' },
+            { id: 'note-7', name: 'Pao/Mcramen', amount: '160g / 130g', details: '160gold (Dyna) / 130g (dyna) (swap)', tag: 'cream' },
+            { id: 'note-8', name: 'Vulk', amount: '70g', details: 'dyna', tag: 'cream' },
+            { id: 'note-9', name: 'L Lawliet01', amount: '233g', details: '(redmane or dyna) Redmane', tag: 'cream' },
+            { id: 'note-10', name: '҉ LadyRen ҉', amount: '200g', details: 'Dyna (donated 10/7)', tag: 'green' },
+            { id: 'note-11', name: 'Baal', amount: '80 gcash', details: '(11/21)', tag: 'cream' },
+            { id: 'note-12', name: 'BADUDi', amount: '160 gcash', details: '(11/21 x2)', tag: 'cream' },
+            { id: 'note-13', name: 'BADUDi', amount: '200 gcash', details: 'for event (coop)', tag: 'blue' },
+            { id: 'note-14', name: 'McRamen', amount: '1800g', details: '(Dyna or Redmane)', tag: 'blue' },
+            { id: 'note-15', name: 'Xeltran', amount: '200g', details: '=1 Free CE for event Dyna', tag: 'blue' },
+            { id: 'note-16', name: 'Dynasty Gold Fund', amount: '938g', details: 'backup clan gold (600g used 11/21)', tag: 'cream' },
+            { id: 'note-17', name: 'Redmane', amount: 'L发财YY128', details: 'Redmane Clan Account', tag: 'cream' }
+        ];
+
+        const initialSampleRoster = [
+            { id: 'r-1', ign: 'IronPricess', dynastyGold: 130, dynastyRemarks: 'donated by McRamen', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-2', ign: 'nina2will', dynastyGold: 130, dynastyRemarks: 'donated by Tsurugiii K', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-3', ign: 'CL1NKZ ツ', dynastyGold: 130, dynastyRemarks: 'donated by Vulk', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-4', ign: 'ayame572', dynastyGold: 200, dynastyRemarks: 'donated by Tsurugiii K', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-5', ign: 'Ⓢ Ⓞ Ⓢ', dynastyGold: 200, dynastyRemarks: 'donated by Tsurugiii K', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-6', ign: 'Wednesdáy', dynastyGold: 200, dynastyRemarks: 'donated by Tsurugiii K', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-7', ign: '҉ LadyRen ҉', dynastyGold: 200, dynastyRemarks: 'from previous donation', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-8', ign: 'Dainsleif 明', dynastyGold: 200, dynastyRemarks: 'from previous donation', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-9', ign: 'SANAAAA1229', dynastyGold: 200, dynastyRemarks: 'from previous donation', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-10', ign: 'BADUDi', dynastyGold: 200, dynastyRemarks: 'gcash, donated by Tsurugiii K', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-11', ign: 'Kajá', dynastyGold: 200, dynastyRemarks: 'gcash, donated by Tsurugiii K', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-12', ign: 'Azikaina', dynastyGold: 200, dynastyRemarks: 'gcash, donated by Tsurugiii K', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-13', ign: 'Pahkisx27', dynastyGold: 200, dynastyRemarks: 'gcash, donated by Tsurugiii K', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-14', ign: 'PpoOyY', dynastyGold: 200, dynastyRemarks: 'gcash, donated by Tsurugiii K', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-15', ign: 'RiseAsEquals', dynastyGold: 200, dynastyRemarks: 'gcash, donated by Tsurugiii K', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-16', ign: 'xCygnuZ', dynastyGold: 200, dynastyRemarks: 'gcash, donated by Tsurugiii K', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-17', ign: 'XeltranSgaM', dynastyGold: 200, dynastyRemarks: 'gcash, donated by Tsurugiii K', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-18', ign: 'AthenaHeraaa', dynastyGold: 200, dynastyRemarks: 'gcash, donated by Tsurugiii K', redmaneGold: 0, redmaneRemarks: '', confirmed: false },
+            { id: 'r-19', ign: 'Lynelle 장미', dynastyGold: 200, dynastyRemarks: 'gcash, donated by Tsurugiii K', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-20', ign: '傑森 ÇhïçkBöii', dynastyGold: 200, dynastyRemarks: 'gcash, donated by Tsurugiii K', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-21', ign: 'Binqz', dynastyGold: 200, dynastyRemarks: '', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-22', ign: 'Ⓚⓐⓘⓙⓤ Ⓝⓞ②', dynastyGold: 200, dynastyRemarks: '', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-23', ign: 'TâlaPotss', dynastyGold: 200, dynastyRemarks: '', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-24', ign: 'Tsurugiii K', dynastyGold: 200, dynastyRemarks: '', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-25', ign: 'xAyakax', dynastyGold: 200, dynastyRemarks: '', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-26', ign: 'ムエMエT ム乇SS', dynastyGold: 200, dynastyRemarks: '', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-27', ign: 'ALTC', dynastyGold: 200, dynastyRemarks: '', redmaneGold: 0, redmaneRemarks: '', confirmed: true },
+            { id: 'r-28', ign: 'BøY 、KiDシ', dynastyGold: 200, dynastyRemarks: '', redmaneGold: 0, redmaneRemarks: '', confirmed: true }
+        ];
+
+        const initialSamplePresets = [
+            { id: 'pre-1', label: 'gcash (Tsurugiii K)', text: 'gcash, donated by Tsurugiii K', color: 'amber' },
+            { id: 'pre-2', label: 'donated by McRamen', text: 'donated by McRamen', color: 'blue' },
+            { id: 'pre-3', label: 'from previous donation', text: 'from previous donation', color: 'purple' },
+            { id: 'pre-4', label: 'donated by Vulk', text: 'donated by Vulk', color: 'emerald' }
+        ];
+
+        const STORAGE_KEY = 'mir4_ce_donation_tracker_v3';
+
+        let appState = {
+            eventDate: '11/21/2026',
+            notes: [],
+            roster: [],
+            presets: [],
+            screenshots: [],
+            scratchpad: '',
+            noteFilter: 'all',
+            sortCol: null,
+            sortAsc: true
+        };
+
+        // Initialize App on Load
+        window.onload = function () {
+            loadStateFromStorage();
+
+            document.getElementById('eventDateInput').addEventListener('input', function (e) {
+                appState.eventDate = e.target.value;
+                saveStateToStorage();
+            });
+
+            document.addEventListener('click', function (e) {
+                const container = document.getElementById('moreMenuContainer');
+                const menu = document.getElementById('moreDropdownMenu');
+                if (container && menu && !container.contains(e.target)) {
+                    menu.classList.add('hidden');
+                }
+            });
+        };
+
+        function toggleMoreMenu(event) {
+            if (event) event.stopPropagation();
+            const menu = document.getElementById('moreDropdownMenu');
+            if (menu) menu.classList.toggle('hidden');
+        }
+
+        function closeMoreMenu() {
+            const menu = document.getElementById('moreDropdownMenu');
+            if (menu) menu.classList.add('hidden');
+        }
+
+        function loadDefaultSampleData() {
+            appState.eventDate = '11/21/2026';
+            appState.notes = JSON.parse(JSON.stringify(initialSampleNotes));
+            appState.roster = JSON.parse(JSON.stringify(initialSampleRoster));
+            appState.presets = JSON.parse(JSON.stringify(initialSamplePresets));
+            appState.screenshots = [];
+            appState.scratchpad = 'GCash notes & trade swaps:\n- Tsurugiii K covering gcash donations\n- Redmane clan account: L发财YY128';
+        }
+
+        function loadStateFromStorage() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                try {
+                    const parsed = JSON.parse(raw);
+                    appState.eventDate = parsed.eventDate || '11/21/2026';
+                    appState.notes = parsed.notes || [];
+                    appState.roster = parsed.roster || [];
+                    appState.presets = parsed.presets || JSON.parse(JSON.stringify(initialSamplePresets));
+                    appState.screenshots = parsed.screenshots || [];
+                    appState.scratchpad = parsed.scratchpad || '';
+                } catch (err) {
+                    console.error('Failed to parse saved state:', err);
+                    loadDefaultSampleData();
+                }
+            } else {
+                loadDefaultSampleData();
+            }
+
+            document.getElementById('eventDateInput').value = appState.eventDate;
+            document.getElementById('scratchpad').value = appState.scratchpad;
+            renderPresets();
+            renderNotes();
+            renderTable();
+            renderScreenshots();
+            updateKPIs();
+        }
+
+        function saveStateToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    eventDate: appState.eventDate,
+                    notes: appState.notes,
+                    roster: appState.roster,
+                    presets: appState.presets,
+                    screenshots: appState.screenshots,
+                    scratchpad: appState.scratchpad
+                }));
+            } catch (e) {
+                console.error('Storage quota exceeded:', e);
+                showToast('Browser storage full! Delete old screenshots to free space.', 'error');
+            }
+            const indicator = document.getElementById('saveStatus');
+            if (indicator) {
+                indicator.innerHTML = '<i class="fa-solid fa-check"></i> Saved just now';
+                setTimeout(() => {
+                    indicator.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Local Storage Auto-saved';
+                }, 1500);
+            }
+        }
+
+        function saveScratchpad() {
+            appState.scratchpad = document.getElementById('scratchpad').value;
+            saveStateToStorage();
+        }
+
+        /**
+         * KPI CALCULATIONS
+         */
+        function updateKPIs() {
+            let dynastyTotal = 0;
+            let dynastyContributors = 0;
+            let redmaneTotal = 0;
+            let redmaneContributors = 0;
+
+            appState.roster.forEach(row => {
+                const d = Number(row.dynastyGold) || 0;
+                const r = Number(row.redmaneGold) || 0;
+                if (d > 0) {
+                    dynastyTotal += d;
+                    dynastyContributors++;
+                }
+                if (r > 0) {
+                    redmaneTotal += r;
+                    redmaneContributors++;
+                }
+            });
+
+            document.getElementById('dynastyTotalGold').textContent = `${dynastyTotal.toLocaleString()}g`;
+            document.getElementById('dynastyCount').textContent = `${dynastyContributors} contributor${dynastyContributors === 1 ? '' : 's'}`;
+
+            document.getElementById('redmaneTotalGold').textContent = `${redmaneTotal.toLocaleString()}g`;
+            document.getElementById('redmaneCount').textContent = `${redmaneContributors} contributor${redmaneContributors === 1 ? '' : 's'}`;
+
+            document.getElementById('combinedTotalGold').textContent = `${(dynastyTotal + redmaneTotal).toLocaleString()}g`;
+            document.getElementById('totalMembersCount').textContent = `${appState.roster.length} total members`;
+        }
+
+        /**
+         * ROSTER TABLE RENDERING & INTERACTIONS
+         */
+        let activeRemarkRowId = null;
+        let activeRemarkField = 'dynastyRemarks';
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function updateSortIcons() {
+            const cols = ['confirmed', 'ign', 'dynastyGold', 'dynastyRemarks', 'redmaneGold', 'redmaneRemarks'];
+            cols.forEach(col => {
+                const icon = document.getElementById(`sortIcon-${col}`);
+                if (!icon) return;
+                if (appState.sortCol === col) {
+                    icon.className = appState.sortAsc
+                        ? 'fa-solid fa-sort-up ml-1 text-[11px] text-white'
+                        : 'fa-solid fa-sort-down ml-1 text-[11px] text-white';
+                } else {
+                    icon.className = 'fa-solid fa-sort ml-1 text-[10px] opacity-60';
+                }
+            });
+
+            const resetBtn = document.getElementById('resetSortBtn');
+            if (resetBtn) {
+                if (appState.sortCol) {
+                    resetBtn.classList.remove('hidden');
+                } else {
+                    resetBtn.classList.add('hidden');
+                }
+            }
+        }
+
+        function resetTableSort() {
+            appState.sortCol = null;
+            appState.sortAsc = true;
+            renderTable();
+            showToast('Restored default insertion order', 'info');
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('rosterTableBody');
+            const searchQuery = (document.getElementById('tableSearchInput').value || '').toLowerCase().trim();
+            const statusFilter = document.getElementById('statusFilterSelect').value;
+
+            updateSortIcons();
+
+            let filtered = appState.roster.filter(row => {
+                const matchesSearch = !searchQuery ||
+                    (row.ign && row.ign.toLowerCase().includes(searchQuery)) ||
+                    (row.dynastyRemarks && row.dynastyRemarks.toLowerCase().includes(searchQuery)) ||
+                    (row.redmaneRemarks && row.redmaneRemarks.toLowerCase().includes(searchQuery));
+
+                if (!matchesSearch) return false;
+
+                if (statusFilter === 'confirmed') return !!row.confirmed;
+                if (statusFilter === 'pending') return !row.confirmed;
+                if (statusFilter === 'has_dynasty') return (Number(row.dynastyGold) || 0) > 0;
+                if (statusFilter === 'has_redmane') return (Number(row.redmaneGold) || 0) > 0;
+                return true;
+            });
+
+            if (appState.sortCol) {
+                filtered = [...filtered].sort((a, b) => {
+                    if (appState.sortCol === 'confirmed') {
+                        const boolA = a.confirmed ? 1 : 0;
+                        const boolB = b.confirmed ? 1 : 0;
+                        // First click (sortAsc = true): Paid (checked) rows at top; second click: Pending at top
+                        return appState.sortAsc ? boolB - boolA : boolA - boolB;
+                    }
+                    let valA = a[appState.sortCol];
+                    let valB = b[appState.sortCol];
+                    if (typeof valA === 'number' || typeof valB === 'number') {
+                        valA = Number(valA) || 0;
+                        valB = Number(valB) || 0;
+                        return appState.sortAsc ? valA - valB : valB - valA;
+                    }
+                    const strA = String(valA || '').trim();
+                    const strB = String(valB || '').trim();
+                    // Keep empty remarks/notes grouped at the bottom regardless of sort direction
+                    if (!strA && !strB) return 0;
+                    if (!strA) return 1;
+                    if (!strB) return -1;
+                    return appState.sortAsc
+                        ? strA.localeCompare(strB, undefined, { sensitivity: 'base' })
+                        : strB.localeCompare(strA, undefined, { sensitivity: 'base' });
+                });
+            }
+
+            document.getElementById('filteredRowCount').textContent = `${filtered.length} row${filtered.length === 1 ? '' : 's'}`;
+            tbody.innerHTML = '';
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="py-8 text-center text-slate-400 text-xs">
+                            No matching members found. Click <span class="font-bold text-indigo-600">+ Add Row</span> to add a player.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            filtered.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                tr.className = row.confirmed
+                    ? 'row-yellow row-yellow-accent transition'
+                    : 'hover:bg-slate-50 transition';
+
+                const ignColorClass = row.confirmed ? 'ign-checked' : 'text-slate-900';
+
+                tr.innerHTML = `
+                    <td class="py-2 px-2 text-center font-mono text-slate-500 font-semibold">${index + 1}</td>
+                    <td class="py-2 px-2 text-center">
+                        <input type="checkbox" ${row.confirmed ? 'checked' : ''} onchange="toggleRowConfirmed('${row.id}', this.checked)" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer">
+                    </td>
+                    <td class="py-2 px-3 min-w-[200px]">
+                        <input type="text" value="${escapeHtml(row.ign)}" oninput="updateRowField('${row.id}', 'ign', this.value)" placeholder="Player IGN..." class="w-full min-w-[185px] text-xs font-bold ${ignColorClass} bg-transparent border border-transparent hover:border-slate-300 focus:border-indigo-500 focus:bg-white rounded px-2 py-1 focus:outline-none ign-input">
+                    </td>
+                    <td class="py-2 px-2 bg-amber-50/30">
+                        <div class="flex items-center gap-1">
+                            <input type="number" value="${Number(row.dynastyGold) || 0}" oninput="updateRowField('${row.id}', 'dynastyGold', Number(this.value) || 0)" class="w-16 text-xs font-extrabold text-blue-900 bg-white border border-slate-300 focus:border-indigo-500 rounded px-1.5 py-1 text-right focus:outline-none">
+                            <div class="flex flex-col gap-0.5">
+                                <button onclick="setQuickGold('${row.id}', 'dynastyGold', 200)" class="text-[9px] font-bold bg-blue-100 hover:bg-blue-200 text-blue-800 px-1 rounded leading-tight" title="Set 200g">200</button>
+                                <button onclick="setQuickGold('${row.id}', 'dynastyGold', 130)" class="text-[9px] font-bold bg-slate-200 hover:bg-slate-300 text-slate-700 px-1 rounded leading-tight" title="Set 130g">130</button>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-2 px-3">
+                        <input type="text" value="${escapeHtml(row.dynastyRemarks)}" onfocus="setActiveRemarkTarget('${row.id}', 'dynastyRemarks')" oninput="updateRowField('${row.id}', 'dynastyRemarks', this.value)" placeholder="Who donated / remarks..." class="w-full text-xs text-slate-700 bg-transparent border border-transparent hover:border-slate-300 focus:border-indigo-500 focus:bg-white rounded px-2 py-1 focus:outline-none">
+                    </td>
+                    <td class="py-2 px-2 bg-rose-50/30">
+                        <div class="flex items-center gap-1">
+                            <input type="number" value="${Number(row.redmaneGold) || 0}" oninput="updateRowField('${row.id}', 'redmaneGold', Number(this.value) || 0)" class="w-16 text-xs font-extrabold text-rose-900 bg-white border border-slate-300 focus:border-rose-500 rounded px-1.5 py-1 text-right focus:outline-none">
+                            <div class="flex flex-col gap-0.5">
+                                <button onclick="setQuickGold('${row.id}', 'redmaneGold', 200)" class="text-[9px] font-bold bg-rose-100 hover:bg-rose-200 text-rose-800 px-1 rounded leading-tight" title="Set 200g">200</button>
+                                <button onclick="setQuickGold('${row.id}', 'redmaneGold', 130)" class="text-[9px] font-bold bg-slate-200 hover:bg-slate-300 text-slate-700 px-1 rounded leading-tight" title="Set 130g">130</button>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-2 px-3">
+                        <input type="text" value="${escapeHtml(row.redmaneRemarks)}" onfocus="setActiveRemarkTarget('${row.id}', 'redmaneRemarks')" oninput="updateRowField('${row.id}', 'redmaneRemarks', this.value)" placeholder="Redmane remarks..." class="w-full text-xs text-slate-700 bg-transparent border border-transparent hover:border-slate-300 focus:border-rose-500 focus:bg-white rounded px-2 py-1 focus:outline-none">
+                    </td>
+                    <td class="py-2 px-2 text-center">
+                        <button onclick="deleteRosterRow('${row.id}')" class="text-slate-400 hover:text-rose-600 p-1 rounded transition" title="Delete row">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        function sortTable(col) {
+            if (appState.sortCol === col) {
+                appState.sortAsc = !appState.sortAsc;
+            } else {
+                appState.sortCol = col;
+                appState.sortAsc = true;
+            }
+            renderTable();
+        }
+
+        function updateRowField(id, field, value) {
+            const row = appState.roster.find(r => r.id === id);
+            if (!row) return;
+            row[field] = value;
+            saveStateToStorage();
+            if (field === 'dynastyGold' || field === 'redmaneGold') {
+                updateKPIs();
+            }
+        }
+
+        function toggleRowConfirmed(id, isChecked) {
+            const row = appState.roster.find(r => r.id === id);
+            if (!row) return;
+            row.confirmed = isChecked;
+            saveStateToStorage();
+            renderTable();
+        }
+
+        function setQuickGold(id, field, amount) {
+            const row = appState.roster.find(r => r.id === id);
+            if (!row) return;
+            row[field] = amount;
+            if (amount > 0) row.confirmed = true;
+            saveStateToStorage();
+            renderTable();
+            updateKPIs();
+        }
+
+        function setActiveRemarkTarget(rowId, field) {
+            activeRemarkRowId = rowId;
+            activeRemarkField = field;
+        }
+
+        function addRosterRow() {
+            const newRow = {
+                id: 'r-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+                ign: '',
+                dynastyGold: 200,
+                dynastyRemarks: '',
+                redmaneGold: 0,
+                redmaneRemarks: '',
+                confirmed: false
+            };
+            appState.roster.push(newRow);
+            saveStateToStorage();
+            renderTable();
+            updateKPIs();
+            showToast('New member row added', 'success');
+        }
+
+        function deleteRosterRow(id) {
+            appState.roster = appState.roster.filter(r => r.id !== id);
+            saveStateToStorage();
+            renderTable();
+            updateKPIs();
+            showToast('Member row removed', 'info');
+        }
+
+        /**
+         * QUICK REMARK PRESETS (ADD / REMOVE / APPLY)
+         */
+        function renderPresets() {
+            const container = document.getElementById('quickPresetsContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const colorClasses = {
+                amber: 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200',
+                blue: 'bg-blue-100 text-blue-900 border-blue-300 hover:bg-blue-200',
+                purple: 'bg-purple-100 text-purple-900 border-purple-300 hover:bg-purple-200',
+                emerald: 'bg-emerald-100 text-emerald-900 border-emerald-300 hover:bg-emerald-200',
+                rose: 'bg-rose-100 text-rose-900 border-rose-300 hover:bg-rose-200'
+            };
+
+            appState.presets.forEach(preset => {
+                const style = colorClasses[preset.color] || colorClasses.amber;
+                const chip = document.createElement('div');
+                chip.className = `inline-flex items-center rounded border text-[11px] font-semibold whitespace-nowrap transition ${style}`;
+                chip.innerHTML = `
+                    <button type="button" onclick="applyRemarkPreset('${escapeHtml(preset.text)}')" class="px-2 py-0.5 text-left" title="Click a remark field first, then click preset to insert">
+                        ${escapeHtml(preset.label)}
+                    </button>
+                    <button type="button" onclick="deletePreset('${preset.id}')" class="px-1.5 py-0.5 border-l border-current/20 hover:bg-black/10 font-bold" title="Remove preset">
+                        &times;
+                    </button>
+                `;
+                container.appendChild(chip);
+            });
+        }
+
+        function applyRemarkPreset(text) {
+            if (!activeRemarkRowId) {
+                showToast('Click inside a Dynasty or Redmane remarks box first!', 'warning');
+                return;
+            }
+            const row = appState.roster.find(r => r.id === activeRemarkRowId);
+            if (!row) return;
+            row[activeRemarkField] = text;
+            saveStateToStorage();
+            renderTable();
+            showToast(`Applied "${text}" to ${row.ign || 'selected row'}`, 'success');
+        }
+
+        function openPresetModal() {
+            document.getElementById('presetLabelInput').value = '';
+            document.getElementById('presetTextInput').value = '';
+            document.getElementById('presetColorSelect').value = 'amber';
+            document.getElementById('presetModal').classList.remove('hidden');
+        }
+
+        function closePresetModal() {
+            document.getElementById('presetModal').classList.add('hidden');
+        }
+
+        function savePreset() {
+            const label = document.getElementById('presetLabelInput').value.trim();
+            const text = document.getElementById('presetTextInput').value.trim();
+            const color = document.getElementById('presetColorSelect').value;
+
+            if (!label || !text) {
+                showToast('Please enter both a label and remark text.', 'warning');
+                return;
+            }
+
+            appState.presets.push({
+                id: 'pre-' + Date.now(),
+                label,
+                text,
+                color
+            });
+
+            saveStateToStorage();
+            renderPresets();
+            closePresetModal();
+            showToast('Quick remark preset added!', 'success');
+        }
+
+        function deletePreset(id) {
+            appState.presets = appState.presets.filter(p => p.id !== id);
+            saveStateToStorage();
+            renderPresets();
+            showToast('Preset removed', 'info');
+        }
+
+        /**
+         * BULK ADD MODAL
+         */
+        function openBulkModal() {
+            document.getElementById('bulkInput').value = '';
+            document.getElementById('bulkModal').classList.remove('hidden');
+        }
+
+        function closeBulkModal() {
+            document.getElementById('bulkModal').classList.add('hidden');
+        }
+
+        function processBulkAdd() {
+            const rawLines = document.getElementById('bulkInput').value.split('\n');
+            const defaultDynasty = Number(document.getElementById('bulkDynastyGold').value) || 0;
+            const defaultRedmane = Number(document.getElementById('bulkRedmaneGold').value) || 0;
+            const defaultRemarks = document.getElementById('bulkRemarks').value.trim();
+            const isConfirmed = document.getElementById('bulkConfirmed').checked;
+
+            let addedCount = 0;
+            rawLines.forEach(line => {
+                const ign = line.trim();
+                if (ign) {
+                    appState.roster.push({
+                        id: 'r-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+                        ign: ign,
+                        dynastyGold: defaultDynasty,
+                        dynastyRemarks: defaultRemarks,
+                        redmaneGold: defaultRedmane,
+                        redmaneRemarks: '',
+                        confirmed: isConfirmed
+                    });
+                    addedCount++;
+                }
+            });
+
+            if (addedCount === 0) {
+                showToast('Please paste at least one IGN.', 'warning');
+                return;
+            }
+
+            saveStateToStorage();
+            renderTable();
+            updateKPIs();
+            closeBulkModal();
+            showToast(`Added ${addedCount} member${addedCount === 1 ? '' : 's'} to roster!`, 'success');
+        }
+
+        /**
+         * CLAN FUND & GCASH NOTES LEDGER
+         */
+        function filterNotes(tag) {
+            appState.noteFilter = tag;
+            ['all', 'cream', 'green', 'blue'].forEach(t => {
+                const btn = document.getElementById(`noteFilter-${t}`);
+                if (!btn) return;
+                if (t === tag) {
+                    btn.classList.add('ring-2', 'ring-slate-900', 'font-bold');
+                } else {
+                    btn.classList.remove('ring-2', 'ring-slate-900', 'font-bold');
+                }
+            });
+            renderNotes();
+        }
+
+        function renderNotes() {
+            const tbody = document.getElementById('notesTableBody');
+            if (!tbody) return;
+
+            const filtered = appState.noteFilter === 'all'
+                ? appState.notes
+                : appState.notes.filter(n => n.tag === appState.noteFilter);
+
+            document.getElementById('noteCount').textContent = `${filtered.length} note${filtered.length === 1 ? '' : 's'}`;
+            tbody.innerHTML = '';
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="py-6 text-center text-slate-400 text-xs">No notes in this category.</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            filtered.forEach(note => {
+                const tr = document.createElement('tr');
+                const tagClass = note.tag === 'green' ? 'tag-green' : (note.tag === 'blue' ? 'tag-blue' : 'tag-cream');
+                tr.className = `${tagClass} hover:brightness-95 transition`;
+
+                tr.innerHTML = `
+                    <td class="py-2 px-3 font-bold text-slate-900 ign-input">${escapeHtml(note.name)}</td>
+                    <td class="py-2 px-2 font-extrabold text-amber-900">${escapeHtml(note.amount)}</td>
+                    <td class="py-2 px-3 text-slate-700">${escapeHtml(note.details)}</td>
+                    <td class="py-2 px-2 text-center whitespace-nowrap">
+                        <button onclick="openNoteModal('${note.id}')" class="text-slate-500 hover:text-indigo-600 p-1" title="Edit note">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button onclick="deleteNote('${note.id}')" class="text-slate-500 hover:text-rose-600 p-1" title="Delete note">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openNoteModal(editId = null) {
+            const modal = document.getElementById('noteModal');
+            if (editId) {
+                const note = appState.notes.find(n => n.id === editId);
+                if (!note) return;
+                document.getElementById('noteModalTitle').textContent = 'Edit Clan Fund Note';
+                document.getElementById('noteEditId').value = note.id;
+                document.getElementById('noteNameInput').value = note.name;
+                document.getElementById('noteAmountInput').value = note.amount;
+                document.getElementById('noteDetailsInput').value = note.details;
+                document.getElementById('noteTagSelect').value = note.tag;
+            } else {
+                document.getElementById('noteModalTitle').textContent = 'Add Clan Fund Note';
+                document.getElementById('noteEditId').value = '';
+                document.getElementById('noteNameInput').value = '';
+                document.getElementById('noteAmountInput').value = '';
+                document.getElementById('noteDetailsInput').value = '';
+                document.getElementById('noteTagSelect').value = 'cream';
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeNoteModal() {
+            document.getElementById('noteModal').classList.add('hidden');
+        }
+
+        function saveNote() {
+            const editId = document.getElementById('noteEditId').value;
+            const name = document.getElementById('noteNameInput').value.trim();
+            const amount = document.getElementById('noteAmountInput').value.trim();
+            const details = document.getElementById('noteDetailsInput').value.trim();
+            const tag = document.getElementById('noteTagSelect').value;
+
+            if (!name && !amount && !details) {
+                showToast('Please enter note information.', 'warning');
+                return;
+            }
+
+            if (editId) {
+                const note = appState.notes.find(n => n.id === editId);
+                if (note) {
+                    note.name = name;
+                    note.amount = amount;
+                    note.details = details;
+                    note.tag = tag;
+                }
+                showToast('Note updated!', 'success');
+            } else {
+                appState.notes.unshift({
+                    id: 'note-' + Date.now(),
+                    name,
+                    amount,
+                    details,
+                    tag
+                });
+                showToast('Note added to ledger!', 'success');
+            }
+
+            saveStateToStorage();
+            renderNotes();
+            closeNoteModal();
+        }
+
+        function deleteNote(id) {
+            appState.notes = appState.notes.filter(n => n.id !== id);
+            saveStateToStorage();
+            renderNotes();
+            showToast('Note removed', 'info');
+        }
+
+        function confirmClearNotes() {
+            if (appState.notes.length === 0) return;
+            showCustomConfirm('Delete all entries in the Clan Fund & GCash Notes Ledger?', () => {
+                appState.notes = [];
+                saveStateToStorage();
+                renderNotes();
+                showToast('Notes ledger cleared', 'info');
+            });
+        }
+
+        /**
+         * RESET & DATA MANAGEMENT ACTIONS (WITH CUSTOM CONFIRMATION)
+         */
+        function confirmResetAllDonations() {
+            showCustomConfirm('Reset ALL Dynasty and Redmane gold donations to 0? (IGNs, remarks, and notes will be kept)', () => {
+                appState.roster.forEach(row => {
+                    row.dynastyGold = 0;
+                    row.redmaneGold = 0;
+                    row.confirmed = false;
+                });
+                saveStateToStorage();
+                renderTable();
+                updateKPIs();
+                showToast('All gold donations reset to 0!', 'success');
+            });
+        }
+
+        function confirmResetAllRemarks() {
+            showCustomConfirm('Clear ALL Dynasty and Redmane remarks? (IGNs and gold amounts will be kept)', () => {
+                appState.roster.forEach(row => {
+                    row.dynastyRemarks = '';
+                    row.redmaneRemarks = '';
+                });
+                saveStateToStorage();
+                renderTable();
+                showToast('All remarks cleared!', 'success');
+            });
+        }
+
+        function confirmResetWeek() {
+            showCustomConfirm('Reset ALL gold amounts to 0 AND clear all remarks for a brand-new week? (Member IGNs will be kept)', () => {
+                appState.roster.forEach(row => {
+                    row.dynastyGold = 0;
+                    row.dynastyRemarks = '';
+                    row.redmaneGold = 0;
+                    row.redmaneRemarks = '';
+                    row.confirmed = false;
+                });
+                saveStateToStorage();
+                renderTable();
+                updateKPIs();
+                showToast('Roster reset for the new week!', 'success');
+            });
+        }
+
+        function confirmLoadSampleData() {
+            showCustomConfirm('Reload original sample spreadsheet data? This will overwrite your current roster and notes.', () => {
+                loadDefaultSampleData();
+                document.getElementById('eventDateInput').value = appState.eventDate;
+                document.getElementById('scratchpad').value = appState.scratchpad;
+                saveStateToStorage();
+                renderPresets();
+                renderNotes();
+                renderTable();
+                renderScreenshots();
+                updateKPIs();
+                showToast('Sample data reloaded!', 'success');
+            });
+        }
+
+        function confirmClearAll() {
+            showCustomConfirm('Are you sure you want to clear EVERYTHING (Roster, Notes, Scratchpad, and Screenshots)?', () => {
+                appState.roster = [];
+                appState.notes = [];
+                appState.screenshots = [];
+                appState.scratchpad = '';
+                document.getElementById('scratchpad').value = '';
+                saveStateToStorage();
+                renderNotes();
+                renderTable();
+                renderScreenshots();
+                updateKPIs();
+                showToast('Everything cleared!', 'info');
+            });
+        }
+
+        /**
+         * DISCORD SUMMARY EXPORT
+         */
+        function copyDiscordSummary() {
+            const dateStr = appState.eventDate || 'Weekly';
+            let dynastyTotal = 0;
+            let redmaneTotal = 0;
+            const dynastyLines = [];
+            const redmaneLines = [];
+
+            appState.roster.forEach((row, idx) => {
+                const d = Number(row.dynastyGold) || 0;
+                const r = Number(row.redmaneGold) || 0;
+                const statusIcon = row.confirmed ? '✅' : '⏳';
+                if (d > 0) {
+                    dynastyTotal += d;
+                    const rem = row.dynastyRemarks ? ` (${row.dynastyRemarks})` : '';
+                    dynastyLines.push(`${statusIcon} ${row.ign}: **${d}g**${rem}`);
+                }
+                if (r > 0) {
+                    redmaneTotal += r;
+                    const rem = row.redmaneRemarks ? ` (${row.redmaneRemarks})` : '';
+                    redmaneLines.push(`${statusIcon} ${row.ign}: **${r}g**${rem}`);
+                }
+            });
+
+            let summary = `🛡️ **MIR4 CLAN EXPEDITION (CE) GOLD DONATION — ${dateStr}** 🛡️\n`;
+            summary += `💰 **Total Combined:** ${(dynastyTotal + redmaneTotal).toLocaleString()}g (Dynasty: ${dynastyTotal.toLocaleString()}g | Redmane: ${redmaneTotal.toLocaleString()}g)\n\n`;
+
+            if (dynastyLines.length > 0) {
+                summary += `🔵 **DYNASTY DONATIONS (${dynastyTotal.toLocaleString()}g):**\n` + dynastyLines.join('\n') + `\n\n`;
+            }
+            if (redmaneLines.length > 0) {
+                summary += `🔴 **REDMANE DONATIONS (${redmaneTotal.toLocaleString()}g):**\n` + redmaneLines.join('\n') + `\n\n`;
+            }
+            if (dynastyLines.length === 0 && redmaneLines.length === 0) {
+                summary += `_No gold donations recorded yet._\n`;
+            }
+
+            document.getElementById('discordTextarea').value = summary.trim();
+            document.getElementById('discordModal').classList.remove('hidden');
+        }
+
+        function closeDiscordModal() {
+            document.getElementById('discordModal').classList.add('hidden');
+        }
+
+        function copyDiscordTextToClipboard() {
+            const textarea = document.getElementById('discordTextarea');
+            textarea.select();
+            textarea.setSelectionRange(0, 99999);
+            try {
+                document.execCommand('copy');
+                showToast('Discord summary copied to clipboard!', 'success');
+            } catch (err) {
+                showToast('Failed to copy text. Please copy manually.', 'error');
+            }
+        }
+
+        /**
+         * JSON EXPORT / IMPORT
+         */
+        function exportJSON() {
+            const dataStr = JSON.stringify({
+                eventDate: appState.eventDate,
+                notes: appState.notes,
+                roster: appState.roster,
+                presets: appState.presets,
+                screenshots: appState.screenshots,
+                scratchpad: appState.scratchpad
+            }, null, 2);
+
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mir4_ce_donations_${(appState.eventDate || 'backup').replace(/\//g, '-')}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('JSON backup exported!', 'success');
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed.roster || parsed.notes) {
+                        appState.eventDate = parsed.eventDate || appState.eventDate;
+                        appState.notes = parsed.notes || [];
+                        appState.roster = parsed.roster || [];
+                        if (parsed.presets) appState.presets = parsed.presets;
+                        appState.screenshots = parsed.screenshots || [];
+                        appState.scratchpad = parsed.scratchpad || '';
+
+                        document.getElementById('eventDateInput').value = appState.eventDate;
+                        document.getElementById('scratchpad').value = appState.scratchpad;
+
+                        saveStateToStorage();
+                        renderPresets();
+                        renderNotes();
+                        renderTable();
+                        renderScreenshots();
+                        updateKPIs();
+                        showToast('Imported data successfully!', 'success');
+                    } else {
+                        showToast('JSON file format not recognized.', 'error');
+                    }
+                } catch (err) {
+                    showToast('Invalid JSON file.', 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        /**
+         * CUSTOM CONFIRMATION DIALOG & TOAST NOTIFICATIONS (NO NATIVE ALERT/CONFIRM)
+         */
+        function showCustomConfirm(message, onConfirm) {
+            const existing = document.getElementById('customConfirmModal');
+            if (existing) existing.remove();
+
+            const modal = document.createElement('div');
+            modal.id = 'customConfirmModal';
+            modal.className = 'fixed inset-0 bg-slate-900/65 backdrop-blur-xs flex items-center justify-center p-4 z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-sm w-full overflow-hidden">
+                    <div class="bg-slate-900 text-white px-4 py-3 flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-400"></i>
+                        <h4 class="font-bold text-sm">Confirm Action</h4>
+                    </div>
+                    <div class="p-4 text-xs text-slate-700 leading-relaxed">
+                        ${escapeHtml(message)}
+                    </div>
+                    <div class="bg-slate-100 px-4 py-2.5 flex justify-end gap-2 border-t border-slate-200">
+                        <button id="confirmCancelBtn" class="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg">Cancel</button>
+                        <button id="confirmOkBtn" class="px-3.5 py-1.5 text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white rounded-lg shadow-xs">Confirm</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            document.getElementById('confirmCancelBtn').onclick = () => modal.remove();
+            document.getElementById('confirmOkBtn').onclick = () => {
+                modal.remove();
+                onConfirm();
+            };
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const colors = {
+                success: 'bg-emerald-600 text-white',
+                error: 'bg-rose-600 text-white',
+                warning: 'bg-amber-500 text-slate-950',
+                info: 'bg-slate-800 text-white'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `${colors[type] || colors.info} px-4 py-2.5 rounded-lg shadow-lg text-xs font-semibold flex items-center gap-2 transition-all duration-300 pointer-events-auto`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info"></i> <span>${escapeHtml(message)}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        /**
+         * SCREENSHOTS & GCASH RECEIPTS MANAGEMENT (Clipboard Paste + File Upload + Notes)
+         */
+        let currentPreviewScreenshotId = null;
+
+        // Global paste listener so Ctrl+V works anywhere when not typing text
+        document.addEventListener('paste', function (event) {
+            const items = (event.clipboardData || event.originalEvent?.clipboardData)?.items;
+            if (!items) return;
+
+            let foundImage = false;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    const blob = items[i].getAsFile();
+                    if (blob) {
+                        foundImage = true;
+                        processImageBlob(blob, 'Pasted Receipt');
+                    }
+                }
+            }
+            if (foundImage) {
+                event.preventDefault();
+            }
+        });
+
+        // Drag and drop setup
+        window.addEventListener('DOMContentLoaded', () => {
+            const dropZone = document.getElementById('screenshotDropZone');
+            if (!dropZone) return;
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-indigo-500', 'bg-indigo-50/50');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('border-indigo-500', 'bg-indigo-50/50');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-indigo-500', 'bg-indigo-50/50');
+                const files = e.dataTransfer?.files;
+                if (files && files.length > 0) {
+                    Array.from(files).forEach(file => {
+                        if (file.type.startsWith('image/')) {
+                            processImageBlob(file, file.name);
+                        }
+                    });
+                }
+            });
+        });
+
+        async function pasteFromClipboardButton() {
+            if (!navigator.clipboard || !navigator.clipboard.read) {
+                showToast('Press Ctrl+V (or Cmd+V) directly on the page to paste your screenshot.', 'info');
+                document.getElementById('screenshotDropZone')?.focus();
+                return;
+            }
+            try {
+                const clipboardItems = await navigator.clipboard.read();
+                let imageFound = false;
+                for (const item of clipboardItems) {
+                    const imageType = item.types.find(type => type.startsWith('image/'));
+                    if (imageType) {
+                        const blob = await item.getType(imageType);
+                        processImageBlob(blob, 'Clipboard Screenshot');
+                        imageFound = true;
+                    }
+                }
+                if (!imageFound) {
+                    showToast('No image found in clipboard. Copy an image first!', 'warning');
+                }
+            } catch (err) {
+                showToast('Press Ctrl+V (or Cmd+V) on the page to paste clipboard image.', 'info');
+                document.getElementById('screenshotDropZone')?.focus();
+            }
+        }
+
+        function handleScreenshotFileSelect(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+            Array.from(files).forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    processImageBlob(file, file.name);
+                }
+            });
+            event.target.value = '';
+        }
+
+        // Compress image via Canvas so LocalStorage holds many screenshots smoothly
+        function processImageBlob(blob, defaultLabel) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = new Image();
+                img.onload = function () {
+                    const maxDim = 1100;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > maxDim || height > maxDim) {
+                        if (width > height) {
+                            height = Math.round((height * maxDim) / width);
+                            width = maxDim;
+                        } else {
+                            width = Math.round((width * maxDim) / height);
+                            height = maxDim;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.78);
+                    const now = new Date();
+                    const timestamp = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                    appState.screenshots.unshift({
+                        id: 'img-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+                        dataUrl: compressedDataUrl,
+                        note: '',
+                        timestamp: timestamp
+                    });
+
+                    saveStateToStorage();
+                    renderScreenshots();
+                    showToast('Screenshot added! Add a note below it.', 'success');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(blob);
+        }
+
+        function updateScreenshotNote(id, newNote) {
+            const item = appState.screenshots.find(s => s.id === id);
+            if (item) {
+                item.note = newNote;
+                saveStateToStorage();
+            }
+        }
+
+        function confirmDeleteScreenshot(id) {
+            const item = appState.screenshots.find(s => s.id === id);
+            if (!item) return;
+            const noteSnippet = item.note ? ` ("${item.note.slice(0, 30)}${item.note.length > 30 ? '...' : ''}")` : '';
+            showCustomConfirm(`Are you sure you want to delete this screenshot${noteSnippet}?`, () => {
+                appState.screenshots = appState.screenshots.filter(s => s.id !== id);
+                saveStateToStorage();
+                renderScreenshots();
+                showToast('Screenshot removed', 'info');
+            });
+        }
+
+        function confirmClearScreenshots() {
+            if (appState.screenshots.length === 0) return;
+            showCustomConfirm('Delete all uploaded screenshots and receipts?', () => {
+                appState.screenshots = [];
+                saveStateToStorage();
+                renderScreenshots();
+                showToast('All screenshots cleared', 'info');
+            });
+        }
+
+        function openImagePreviewModal(id) {
+            const item = appState.screenshots.find(s => s.id === id);
+            if (!item) return;
+            currentPreviewScreenshotId = id;
+            document.getElementById('previewModalImg').src = item.dataUrl;
+            document.getElementById('previewModalTitle').textContent = `Uploaded: ${item.timestamp}`;
+            document.getElementById('previewModalNoteInput').value = item.note || '';
+            document.getElementById('imagePreviewModal').classList.remove('hidden');
+        }
+
+        function closeImagePreviewModal() {
+            document.getElementById('imagePreviewModal').classList.add('hidden');
+            currentPreviewScreenshotId = null;
+        }
+
+        function savePreviewModalNote() {
+            if (!currentPreviewScreenshotId) return;
+            const val = document.getElementById('previewModalNoteInput').value;
+            updateScreenshotNote(currentPreviewScreenshotId, val);
+            renderScreenshots();
+            closeImagePreviewModal();
+            showToast('Screenshot note updated!', 'success');
+        }
+
+        function renderScreenshots() {
+            const grid = document.getElementById('screenshotsGrid');
+            const countBadge = document.getElementById('screenshotCount');
+            if (!grid) return;
+
+            countBadge.textContent = `${appState.screenshots.length} ${appState.screenshots.length === 1 ? 'image' : 'images'}`;
+            grid.innerHTML = '';
+
+            if (appState.screenshots.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-6 text-center text-xs text-slate-400">
+                        No screenshots uploaded yet. Copy an image and press <span class="font-semibold text-slate-600">Ctrl+V</span> to attach a GCash receipt or donation proof.
+                    </div>
+                `;
+                return;
+            }
+
+            appState.screenshots.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'bg-slate-50 border border-slate-200 rounded-xl overflow-hidden shadow-xs flex flex-col group transition hover:border-indigo-300';
+
+                card.innerHTML = `
+                    <div class="relative h-44 bg-slate-900 overflow-hidden cursor-pointer" onclick="openImagePreviewModal('${item.id}')">
+                        <img src="${item.dataUrl}" alt="Donation screenshot" class="w-full h-full object-cover group-hover:scale-105 transition duration-200">
+                        <div class="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/30 transition flex items-center justify-center">
+                            <span class="opacity-0 group-hover:opacity-100 bg-slate-900/90 text-white text-[11px] font-semibold px-2.5 py-1 rounded-full shadow transition">
+                                <i class="fa-solid fa-magnifying-glass-plus mr-1"></i> View Full
+                            </span>
+                        </div>
+                        <button onclick="event.stopPropagation(); confirmDeleteScreenshot('${item.id}')" class="absolute top-2 right-2 bg-rose-600/90 hover:bg-rose-600 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center shadow transition" title="Delete screenshot">
+                            <i class="fa-solid fa-trash-can text-[10px]"></i>
+                        </button>
+                        <span class="absolute bottom-1.5 left-2 bg-slate-900/80 text-slate-200 text-[10px] px-2 py-0.5 rounded">
+                            ${item.timestamp}
+                        </span>
+                    </div>
+                    <div class="p-2.5 flex-grow flex flex-col gap-1 bg-white">
+                        <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                            <i class="fa-solid fa-note-sticky text-amber-500"></i> Receipt / Screenshot Note
+                        </label>
+                        <textarea rows="2" placeholder="Who paid, GCash ref#, amount..." oninput="updateScreenshotNote('${item.id}', this.value)" class="w-full text-xs p-1.5 rounded border border-slate-200 focus:outline-none focus:border-indigo-500 bg-slate-50/60 focus:bg-white resize-none text-slate-800">${item.note || ''}</textarea>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
